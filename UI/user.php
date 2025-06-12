@@ -1,5 +1,11 @@
 <?php
-include('header.php');
+
+  include_once ('connectdb.php');
+  session_start();
+  if ($_SESSION['email']=="" OR $_SESSION['role']=="admin") {
+    header('location: ../index.php');
+  }
+  include('headeruser.php');
 ?>
 
 
