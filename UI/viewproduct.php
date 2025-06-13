@@ -1,6 +1,6 @@
 <?php
 include_once ('connectdb.php');
-require __DIR__ . '/../vendor/php_barcode/barcode128.php';
+include_once 'php_barcode/barcode128.php';
 
 session_start();
 if ($_SESSION['email']=="" OR $_SESSION['role']=="user") {

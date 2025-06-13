@@ -1,0 +1,3 @@
+[submodule "UI/php_barcode"]
+	path = UI/php_barcode
+	url = https://gitlab.com/Juwel/php_barcode.git
