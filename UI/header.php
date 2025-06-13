@@ -18,6 +18,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
   <!--SweetAlert2-->
   <link rel="stylesheet" href="../plugins/sweetalert2/sweetalert2.min.css"
+
+
+  <!-- DataTables -->
+  <link rel="stylesheet" href="../plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+  <link rel="stylesheet" href="../plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+  <link rel="stylesheet" href="../plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
+
 </head>
 <body class="hold-transition sidebar-mini">
 <div class="wrapper">
@@ -200,7 +207,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
             </a>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="category.php" class="nav-link">
               <i class="nav-icon fas fa-table"></i>
               <p>
                 Category

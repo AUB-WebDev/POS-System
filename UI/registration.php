@@ -80,7 +80,7 @@ if (isset($_POST['btn_save'])) {
       <!-- card start -->
           <div class="card card-primary card-outline">
             <div class="card-header">
-              <h5 class="m-0">Featured</h5>
+              <h5 class="m-0">Registration Form</h5>
             </div>
             <div class="card-body">
               <div class="row" >
