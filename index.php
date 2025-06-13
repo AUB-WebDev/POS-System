@@ -14,6 +14,7 @@
 
     $row = $select->fetch(PDO::FETCH_ASSOC);
     if (is_array($row)) {
+
       if ($row['email'] == $email && $row['password'] == $password && $row['role'] == 'admin') {
 
         $_SESSION['email'] = $row['email'];
@@ -35,6 +36,10 @@
         $_SESSION['status'] =  "Login Successful as User";
         $_SESSION['status_code'] = 'success';
         header('refresh:1; UI/user.php');
+      }
+      else { //since mysql is not case sensitive, use this
+        $_SESSION['status_code'] = 'error';
+        $_SESSION['status'] = "Incorrect Email or Password";
       }
 
     } else {
