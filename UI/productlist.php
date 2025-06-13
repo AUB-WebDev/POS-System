@@ -77,7 +77,7 @@ include('header.php');
                                 <a href="editproduct.php?id='.$row->product_id.'" class="btn btn-success btn-xs" role="button">
                                     <span class="fa fa-edit" style="color: #FFFFFF" data-toggle="tooltip" title="Edit Product" "></span>
                                 </a>
-                                <button id="'.$row->product_id.'" class="btn btn-danger btn-xs">
+                                <button id="'.$row->product_id.'" class="btn btn-danger btn-xs btndelete" >
                                     <span class="fa fa-trash" style="color: #FFFFFF" data-toggle="tooltip" title="Delete Product" "></span>
                                 </button>
                             </div>
@@ -115,3 +115,43 @@ include('footer.php');
   });
 </script>
 
+
+<script>
+  $(document).ready(function (){
+    $('.btndelete').click(function (){
+
+      var tdt = $(this);
+      var id = $(this).attr("id");
+
+      Swal.fire({
+        title: "Do you want to delete?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Yes, delete it!"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: "productdelete.php",
+            type: "POST",
+            data:{
+              product_id : id
+            },
+            success: function(data){
+              tdt.parents('tr').hide();
+            }
+          });
+          Swal.fire({
+            title: "Deleted!",
+            text: "Your product has been deleted.",
+            icon: "success"
+          });
+        }
+      });
+
+
+    });
+  });
+</script>
