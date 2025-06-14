@@ -22,11 +22,63 @@ function fill_product($pdo){
   return $output;
 }
 
-
 $select  = $pdo->prepare("SELECT * from tbl_taxdis where taxdis_id = 8");
 
 $select->execute();
 $row = $select->fetch(PDO::FETCH_OBJ);
+
+
+if (isset($_POST['btn_save_order'])){
+
+  $subtotal = $_POST['txt_subtotal'];
+  $discount = $_POST['txt_discount'];
+  $sgst     = $_POST['txt_sgst'];
+  $cgst     = $_POST['txt_cgst'];
+  $total    = $_POST['txt_total'];
+  $due      = $_POST['txt_due'];
+  $paid     = $_POST['txt_paid'];
+  $order_date = date("Y-m-d");
+  $payment_type = $_POST['r3'];
+
+  $arr_pid     = $_POST['pid_arr'];
+  $arr_barcode = $_POST['barcode_arr'];
+  $arr_name    = $_POST['product_arr'];
+  $arr_stock   = $_POST['stock_c_arr'];
+  $arr_qty     = $_POST['quantity_arr'];
+  $arr_price   = $_POST['price_c_arr'];
+  $arr_total    = $_POST['total_c_arr'];
+
+  $insert = $pdo->prepare("insert into tbl_invoice( order_date, subtotal, discount, sgst, cgst, total, payment_type, due, paid) values( :order_date, :subtotal, :discount, :sgst, :cgst, :total, :payment_type ,:due, :paid)");
+  $insert->bindParam(':order_date', $order_date);
+  $insert->bindParam(':subtotal', $subtotal);
+  $insert->bindParam(':discount', $discount);
+  $insert->bindParam(':sgst', $sgst);
+  $insert->bindParam(':cgst', $cgst);
+  $insert->bindParam(':total', $total);
+  $insert->bindParam(':payment_type', $payment_type);
+  $insert->bindParam(':due', $due);
+  $insert->bindParam(':paid', $paid);
+
+  $insert->execute();
+
+  $invoice_id = $pdo->lastInsertId();
+  if($insert != NULL){
+    for($i=0; $i<count($arr_pid); $i++){
+      $rem_qty = $arr_stock[$i] - $arr_qty[$i];
+      if($rem_qty < 0){
+        return "Order is not complete!";
+      }else{
+
+        $update = $pdo->prepare("update tbl_product set stock =:stock where product_id =:product_id");
+        $update->bindParam(':product_id', $arr_pid[$i]);
+        $update->bindParam(':stock', $rem_qty);
+        $update->execute();
+
+      }
+    }
+  }
+}
+
 
 ?>
 
@@ -79,6 +131,7 @@ $row = $select->fetch(PDO::FETCH_OBJ);
             <div class="card-header">
               <h5 class="m-0">POS</h5>
             </div>
+
             <div class="card-body">
               <div class="row">
                 <div class="col-md-8">
@@ -88,7 +141,7 @@ $row = $select->fetch(PDO::FETCH_OBJ);
                     </div>
                     <input type="text" class="form-control" id="txt_barcode_id" placeholder="Scan Barcode">
                   </div>
-
+                  <form action="" method="POST" name="">
                   <select class="form-control select2" data-dropdown-css-class="select2-purple" style="width: 100%; margin-bottom: 10px">
                     <option selected disabled >Select Or Search</option>
                     <?php echo fill_product($pdo); ?>
@@ -120,7 +173,7 @@ $row = $select->fetch(PDO::FETCH_OBJ);
                     <div class="input-group-prepend">
                       <span class="input-group-text" >SUBTOTAL</span>
                     </div>
-                    <input type="text" class="form-control" id="txtsubtotal_id" readonly>
+                    <input type="text" class="form-control" id="txtsubtotal_id" name="txt_subtotal" readonly>
                     <div class="input-group-append">
                       <span class="input-group-text">$</span>
                     </div>
@@ -129,7 +182,7 @@ $row = $select->fetch(PDO::FETCH_OBJ);
                     <div class="input-group-prepend">
                       <span class="input-group-text"  >DISCOUNT</span>
                     </div>
-                    <input type="text" class="form-control" value="<?php echo $row->discount; ?>" id="txtdiscount_p">
+                    <input type="text" class="form-control" value="<?php echo $row->discount; ?>" id="txtdiscount_p" name="txt_discount">
                     <div class="input-group-append">
                       <span class="input-group-text">%</span>
                     </div>
@@ -147,7 +200,7 @@ $row = $select->fetch(PDO::FETCH_OBJ);
                     <div class="input-group-prepend">
                       <span class="input-group-text" >SGST(%)</span>
                     </div>
-                    <input type="text" class="form-control" value="<?php echo $row->sgst; ?>"  id="txtsgst_id_p"readonly>
+                    <input type="text" class="form-control" value="<?php echo $row->sgst; ?>"  id="txtsgst_id_p" name="txt_sgst" readonly>
                     <div class="input-group-append">
                       <span class="input-group-text">%</span>
                     </div>
@@ -156,7 +209,7 @@ $row = $select->fetch(PDO::FETCH_OBJ);
                     <div class="input-group-prepend">
                       <span class="input-group-text" >CGST(%)</span>
                     </div>
-                    <input type="text" class="form-control" value="<?php echo $row->cgst; ?>" id="txtcgst_id_p" readonly>
+                    <input type="text" class="form-control" value="<?php echo $row->cgst; ?>" id="txtcgst_id_p" name="txt_cgst" readonly>
                     <div class="input-group-append">
                       <span class="input-group-text">%</span>
                     </div>
@@ -186,7 +239,7 @@ $row = $select->fetch(PDO::FETCH_OBJ);
                     <div class="input-group-prepend">
                       <span class="input-group-text" >TOTAL</span>
                     </div>
-                    <input type="text" class="form-control form-control-lg total" id="txttotal" readonly>
+                    <input type="text" class="form-control form-control-lg total" id="txttotal" name="txt_total" readonly>
                     <div class="input-group-append">
                       <span class="input-group-text">$</span>
                     </div>
@@ -195,13 +248,13 @@ $row = $select->fetch(PDO::FETCH_OBJ);
                   <hr style="height: 2px; border-width: 0; color: black; background-color: black;">
 
                   <div class="icheck-success d-inline">
-                    <input type="radio" name="r3" checked id="radioSuccess1">
+                    <input type="radio" name="r3" checked id="radioSuccess1" value="cash">
                     <label for="radioSuccess1">
                       CASH
                     </label>
                   </div>
                   <div class="icheck-primary d-inline">
-                    <input type="radio" name="r3" id="radioSuccess2">
+                    <input type="radio" name="r3" id="radioSuccess2" value="card">
                     <label for="radioSuccess2">
                       CARD
                     </label>
@@ -218,7 +271,7 @@ $row = $select->fetch(PDO::FETCH_OBJ);
                     <div class="input-group-prepend">
                       <span class="input-group-text" >DUE</span>
                     </div>
-                    <input type="text" class="form-control form-control-lg " id="txtdue" readonly>
+                    <input type="text" class="form-control form-control-lg " id="txtdue" name="txt_due" readonly>
                     <div class="input-group-append">
                       <span class="input-group-text">$</span>
                     </div>
@@ -227,19 +280,20 @@ $row = $select->fetch(PDO::FETCH_OBJ);
                     <div class="input-group-prepend">
                       <span class="input-group-text" >PAID</span>
                     </div>
-                    <input type="text" class="form-control form-control-lg " id="txtpaid" >
+                    <input type="text" class="form-control form-control-lg " id="txtpaid" name="txt_paid" >
                     <div class="input-group-append">
                       <span class="input-group-text">$</span>
                     </div>
                   </div>
                   <hr style="height: 2px; border-width: 0; color: black; background-color: black;">
-                  <div class="card-footer">
-                    <input type="button" class="btn btn-primary" value="Save Order" >
+                  <div class="text-center">
+                    <input type="submit" class="btn btn-primary" value="Save Order" name="btn_save_order">
                   </div>
 
                 </div>
               </div>
             </div>
+            </form>
           </div>
         </div>
         <!-- /.col-md-6 -->
@@ -401,6 +455,8 @@ include('footer.php');
 
             function addrow(pid, product, saleprice, stock, barcode) {
               var tr = '<tr>' +
+                '<input type="hidden" class="form-control total_c" name="barcode_arr[]" value="' + barcode + '" >'+
+                '<input type="hidden" class="form-control total_c" name="product_arr[]" value="' + product + '" >'+ //since i forgot to add prodcut_arr[], ill use this as a quick fix. Will come back later.
                 '<td style="text-align: left; vertical-align: middle; font-size: 17px;">' +
                 '<span class="badge badge-dark">' + product + '</span>' +
                 '<input type="hidden" class="form-control pid" name="pid_arr[]" value="' + pid + '">' +
@@ -470,8 +526,6 @@ include('footer.php');
           id:productid //user can enter barcode or product id to get the result, check getproduct.php for better understanding
         },
         success: function (data){
-          // alert(barcode);
-          console.log(data);
 
           if(jQuery.inArray(data['product_id'], productarr) !== -1){
             var actualqty = parseInt($('#qty_id' + data['product_id']).val()) + 1;
@@ -495,6 +549,8 @@ include('footer.php');
 
             function addrow(pid, product, saleprice, stock, barcode) {
               var tr = '<tr>' +
+                '<input type="hidden" class="form-control total_c" name="barcode_arr[]" value="' + barcode + '" >'+
+                '<input type="hidden" class="form-control total_c" name="product_arr[]" value="' + product + '" >'+
                 '<td style="text-align: left; vertical-align: middle; font-size: 17px;">' +
                 '<span class="badge badge-dark">' + product + '</span>' +
                 '<input type="hidden" class="form-control pid" name="pid_arr[]" value="' + pid + '">' +
@@ -550,6 +606,7 @@ include('footer.php');
 
   })
 
+  $("#txtpaid").val("0.00");
 
 
 </script>
