@@ -46,5 +46,9 @@
 <script src="../plugins/datatables-buttons/js/buttons.html5.min.js"></script>
 <script src="../plugins/datatables-buttons/js/buttons.print.min.js"></script>
 <script src="../plugins/datatables-buttons/js/buttons.colVis.min.js"></script>
+
+<!-- Select2 -->
+<script src="../plugins/select2/js/select2.full.min.js"></script>
+
 </body>
 </html>
