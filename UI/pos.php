@@ -1,5 +1,7 @@
 <?php
 
+ob_start();
+
 include_once ('connectdb.php');
 session_start();
 if ($_SESSION['email']=="" OR $_SESSION['role']=="user") {
@@ -8,6 +10,8 @@ if ($_SESSION['email']=="" OR $_SESSION['role']=="user") {
 
 
 include('header.php');
+
+ob_end_flush();;
 
 function fill_product($pdo){
   $output = '';
@@ -21,6 +25,7 @@ function fill_product($pdo){
   }
   return $output;
 }
+
 
 $select  = $pdo->prepare("SELECT * from tbl_taxdis where taxdis_id = 8");
 
@@ -74,6 +79,20 @@ if (isset($_POST['btn_save_order'])){
         $update->bindParam(':stock', $rem_qty);
         $update->execute();
 
+      }
+
+      $insert = $pdo->prepare("insert into tbl_invoice_details(invoice_id, barcode, product_id, product_name, qty, purchaseprice, saleprice, order_date) values (:invoice_id, :barcode, :product_id, :product_name, :qty, :purchaseprice, :saleprice, :order_date)");
+      $insert->bindParam(':invoice_id', $invoice_id);
+      $insert->bindParam(':barcode', $arr_barcode[$i]);
+      $insert->bindParam(':product_id', $arr_pid[$i]);
+      $insert->bindParam(':product_name', $arr_name[$i]);
+      $insert->bindParam(':qty', $arr_qty[$i]);
+      $insert->bindParam(':purchaseprice', $arr_price[$i]);
+      $insert->bindParam(':saleprice', $arr_total[$i]);
+      $insert->bindParam(':order_date', $order_date);
+
+      if(!$insert->execute()){
+        print_r($insert->errorInfo());
       }
     }
   }
@@ -321,22 +340,6 @@ include('footer.php');
     })
   });
 
-  // function calculate(){
-  //   var subtotal = 0;
-  //   var discount = 0;
-  //   var sgst = 0;
-  //   var cgst = 0;
-  //   var total = 0;
-  //   var paid_amt = 0;
-  //   var due = 0;
-  //
-  //   $(".saleprice").each(function (){
-  //     subtotal =  subtotal + ($(this).val() * 1);
-  //   });
-  //
-  //   $("#txtsubtotal_id").val(subtotal.toFixed(2));
-  //
-  // }
 
   function calculate(dis=0, paid_amount=0){
     var subtotal = 0;
