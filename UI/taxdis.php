@@ -62,18 +62,6 @@ if (isset($_POST['btn_update'])) {
 
 }
 
-if (isset($_POST['btn_delete'])) {
-
-  $delete = $pdo->prepare("DELETE FROM tbl_taxdis WHERE taxdis_id=:taxdis_id");
-  $delete->bindParam(':taxdis_id', $_POST['btn_delete']);
-  if ($delete->execute()) {
-    $_SESSION['status'] = "Tax Deleted Successfully";
-    $_SESSION['status_code'] = 'success';
-  }else{
-    $_SESSION['status'] = "Tax Not Deleted";
-    $_SESSION['status_code'] = 'danger';
-  }
-}
 ?>
 
 <!-- Content Wrapper. Contains page content -->
@@ -176,7 +164,6 @@ if (isset($_POST['btn_delete'])) {
                     <td>CGST(%)</td>
                     <td>Discount</td>
                     <td>Edit</td>
-                    <td>Delete</td>
                   </tr>
                   </thead>
                   <tbody>
@@ -192,11 +179,7 @@ if (isset($_POST['btn_delete'])) {
                            <td>'.$row->cgst.'</td>
                            <td>'.$row->discount.'</td>
                            <td>
-
                             <button type="submit" name="btn_edit" class="btn btn-primary" value="'.$row->taxdis_id.'">Edit</button>
-                           </td>
-                           <td>
-                            <button type="submit" name="btn_delete" class="btn btn-danger" value="'.$row->taxdis_id.'">Delete</button>
                            </td>
                          </tr>
                         ';
@@ -210,7 +193,6 @@ if (isset($_POST['btn_delete'])) {
                     <td>CGST(%)</td>
                     <td>Discount</td>
                     <td>Edit</td>
-                    <td>Delete</td>
                   </tr>
                   </tfoot>
                 </table>
