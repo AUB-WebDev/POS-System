@@ -27,75 +27,85 @@ function fill_product($pdo){
 }
 
 
-$select  = $pdo->prepare("SELECT * from tbl_taxdis where taxdis_id = 8");
+$select  = $pdo->prepare("SELECT * from tbl_taxdis where taxdis_id = 1");
 
 $select->execute();
 $row = $select->fetch(PDO::FETCH_OBJ);
 
 
 if (isset($_POST['btn_save_order'])){
+  //check if the table is empty
+  if (empty($_POST['pid_arr'])){
+    $_SESSION['status']="Please Choose Product";
+    $_SESSION['status_code'] = "error";
+  }else{
+    $subtotal = $_POST['txt_subtotal'];
+    $discount = $_POST['txt_discount'];
+    $sgst     = $_POST['txt_sgst'];
+    $cgst     = $_POST['txt_cgst'];
+    $total    = $_POST['txt_total'];
+    $due      = $_POST['txt_due'];
+    $paid     = $_POST['txt_paid'];
+    $order_date = date("Y-m-d");
+    $payment_type = $_POST['r3'];
 
-  $subtotal = $_POST['txt_subtotal'];
-  $discount = $_POST['txt_discount'];
-  $sgst     = $_POST['txt_sgst'];
-  $cgst     = $_POST['txt_cgst'];
-  $total    = $_POST['txt_total'];
-  $due      = $_POST['txt_due'];
-  $paid     = $_POST['txt_paid'];
-  $order_date = date("Y-m-d");
-  $payment_type = $_POST['r3'];
+    $arr_pid     = $_POST['pid_arr'];
+    $arr_barcode = $_POST['barcode_arr'];
+    $arr_name    = $_POST['product_arr'];
+    $arr_stock   = $_POST['stock_c_arr'];
+    $arr_qty     = $_POST['quantity_arr'];
+    $arr_price   = $_POST['price_c_arr'];
+    $arr_total    = $_POST['total_c_arr'];
 
-  $arr_pid     = $_POST['pid_arr'];
-  $arr_barcode = $_POST['barcode_arr'];
-  $arr_name    = $_POST['product_arr'];
-  $arr_stock   = $_POST['stock_c_arr'];
-  $arr_qty     = $_POST['quantity_arr'];
-  $arr_price   = $_POST['price_c_arr'];
-  $arr_total    = $_POST['total_c_arr'];
+    $insert = $pdo->prepare("insert into tbl_invoice( order_date, subtotal, discount, sgst, cgst, total, payment_type, due, paid) values( :order_date, :subtotal, :discount, :sgst, :cgst, :total, :payment_type ,:due, :paid)");
+    $insert->bindParam(':order_date', $order_date);
+    $insert->bindParam(':subtotal', $subtotal);
+    $insert->bindParam(':discount', $discount);
+    $insert->bindParam(':sgst', $sgst);
+    $insert->bindParam(':cgst', $cgst);
+    $insert->bindParam(':total', $total);
+    $insert->bindParam(':payment_type', $payment_type);
+    $insert->bindParam(':due', $due);
+    $insert->bindParam(':paid', $paid);
 
-  $insert = $pdo->prepare("insert into tbl_invoice( order_date, subtotal, discount, sgst, cgst, total, payment_type, due, paid) values( :order_date, :subtotal, :discount, :sgst, :cgst, :total, :payment_type ,:due, :paid)");
-  $insert->bindParam(':order_date', $order_date);
-  $insert->bindParam(':subtotal', $subtotal);
-  $insert->bindParam(':discount', $discount);
-  $insert->bindParam(':sgst', $sgst);
-  $insert->bindParam(':cgst', $cgst);
-  $insert->bindParam(':total', $total);
-  $insert->bindParam(':payment_type', $payment_type);
-  $insert->bindParam(':due', $due);
-  $insert->bindParam(':paid', $paid);
+    $insert->execute();
 
-  $insert->execute();
+    $invoice_id = $pdo->lastInsertId();
+    if($insert != NULL){
+      for($i=0; $i<count($arr_pid); $i++){
+        $rem_qty = $arr_stock[$i] - $arr_qty[$i];
+        if($rem_qty < 0){
+          return "Order is not complete!";
+        }else{
 
-  $invoice_id = $pdo->lastInsertId();
-  if($insert != NULL){
-    for($i=0; $i<count($arr_pid); $i++){
-      $rem_qty = $arr_stock[$i] - $arr_qty[$i];
-      if($rem_qty < 0){
-        return "Order is not complete!";
-      }else{
+          $update = $pdo->prepare("update tbl_product set stock =:stock where product_id =:product_id");
+          $update->bindParam(':product_id', $arr_pid[$i]);
+          $update->bindParam(':stock', $rem_qty);
+          $update->execute();
 
-        $update = $pdo->prepare("update tbl_product set stock =:stock where product_id =:product_id");
-        $update->bindParam(':product_id', $arr_pid[$i]);
-        $update->bindParam(':stock', $rem_qty);
-        $update->execute();
+        }
 
-      }
+        $insert = $pdo->prepare("insert into tbl_invoice_details(invoice_id, barcode, product_id, product_name, qty, purchaseprice, saleprice, order_date) values (:invoice_id, :barcode, :product_id, :product_name, :qty, :purchaseprice, :saleprice, :order_date)");
+        $insert->bindParam(':invoice_id', $invoice_id);
+        $insert->bindParam(':barcode', $arr_barcode[$i]);
+        $insert->bindParam(':product_id', $arr_pid[$i]);
+        $insert->bindParam(':product_name', $arr_name[$i]);
+        $insert->bindParam(':qty', $arr_qty[$i]);
+        $insert->bindParam(':purchaseprice', $arr_price[$i]);
+        $insert->bindParam(':saleprice', $arr_total[$i]);
+        $insert->bindParam(':order_date', $order_date);
 
-      $insert = $pdo->prepare("insert into tbl_invoice_details(invoice_id, barcode, product_id, product_name, qty, purchaseprice, saleprice, order_date) values (:invoice_id, :barcode, :product_id, :product_name, :qty, :purchaseprice, :saleprice, :order_date)");
-      $insert->bindParam(':invoice_id', $invoice_id);
-      $insert->bindParam(':barcode', $arr_barcode[$i]);
-      $insert->bindParam(':product_id', $arr_pid[$i]);
-      $insert->bindParam(':product_name', $arr_name[$i]);
-      $insert->bindParam(':qty', $arr_qty[$i]);
-      $insert->bindParam(':purchaseprice', $arr_price[$i]);
-      $insert->bindParam(':saleprice', $arr_total[$i]);
-      $insert->bindParam(':order_date', $order_date);
-
-      if(!$insert->execute()){
-        print_r($insert->errorInfo());
+        if(!$insert->execute()){
+          print_r($insert->errorInfo());
+        }else{
+          $_SESSION['status']="Order Added Successfully!";
+          $_SESSION['status_code'] = "success";
+        }
       }
     }
+
   }
+
 }
 
 
@@ -158,10 +168,10 @@ if (isset($_POST['btn_save_order'])){
                     <div class="input-group-prepend">
                       <span class="input-group-text"><i class="fa fa-barcode"></i> </span>
                     </div>
-                    <input type="text" class="form-control" id="txt_barcode_id" placeholder="Scan Barcode">
+                    <input type="text" class="form-control" id="txt_barcode_id" placeholder="Scan Barcode" autofocus>
                   </div>
                   <form action="" method="POST" name="">
-                  <select class="form-control select2" data-dropdown-css-class="select2-purple" style="width: 100%; margin-bottom: 10px">
+                  <select class="form-control select2" data-dropdown-css-class="select2-purple" style="width: 100%; margin-bottom: 10px" id="select2_select">
                     <option selected disabled >Select Or Search</option>
                     <?php echo fill_product($pdo); ?>
                   </select>
@@ -179,9 +189,9 @@ if (isset($_POST['btn_save_order'])){
                       </tr>
                       </thead>
                       <tbody class="details" id="item_table"  >
-                        <tr data-widget="expandable-table" aria-expanded="false">
-
-                        </tr>
+<!--                        <tr data-widget="expandable-table" aria-expanded="false">-->
+<!---->
+<!--                        </tr>-->
                       </tbody>
                     </table>
                   </div>
@@ -330,14 +340,20 @@ include('footer.php');
 
 <script>
 
-  $(document).ready(function(){
-    //Initialize Select2 Elements
-    $('.select2').select2()
+  // $(document).ready(function (){
+  //   //Initialize Select2 Elements
+  //   $('#select2_select').select2({
+  //     theme: 'bootstrap4'
+  //   })
+  // });
 
-    //Initialize Select2 Elements
-    $('.select2bs4').select2({
-      theme: 'bootstrap4'
-    })
+  $(function(){
+      //Initialize Select2 Elements
+      $('#select2_select').select2({
+        theme: 'bootstrap4'
+      })
+
+      $("#txtpaid").val("0.00");
   });
 
 
@@ -607,9 +623,29 @@ include('footer.php');
     });
 
 
-  })
+  });
 
-  $("#txtpaid").val("0.00");
+  //disable enter key in PAID to prevent error
+  $("#txtpaid").keypress(function (e){
+    if(e.which === 13) return false;
+  });
 
+  //disable enter key in DISCOUNT to prevent error
+  $("#txtdiscount_p").keypress(function (e){
+    if(e.which === 13) return false;
+  });
 
 </script>
+
+<?php if (isset($_SESSION['status']) && isset($_SESSION['status_code'])): ?>
+  <script>
+    Swal.fire({
+      icon: '<?php echo $_SESSION['status_code']; ?>',
+      title: '<?php echo $_SESSION['status']; ?>'
+    });
+  </script>
+  <?php
+  unset($_SESSION['status']);
+  unset($_SESSION['status_code']);
+  ?>
+<?php endif; ?>
