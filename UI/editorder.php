@@ -8,7 +8,6 @@ if ($_SESSION['email']=="" OR $_SESSION['role']=="user") {
   header('location: ../index.php');
 }
 
-
 include('header.php');
 
 ob_end_flush();;
@@ -26,19 +25,33 @@ function fill_product($pdo){
   return $output;
 }
 
+//Edit order start
+$id = $_GET["id"];
 
-$select  = $pdo->prepare("SELECT * from tbl_taxdis where taxdis_id = 1");
-
+$select = $pdo->prepare("SELECT * from tbl_invoice where invoice_id = :id");
+$select->bindParam(":id", $id);
 $select->execute();
+
 $row = $select->fetch(PDO::FETCH_OBJ);
 
+$order_date = date("d-m-Y", strtotime($row->order_date));
 
-if (isset($_POST['btn_save_order'])){
+$subtotal = $row->subtotal;
+$sgst     = $row->sgst;
+$cgst     = $row->cgst;
+$discount = $row->discount;
+$total    = $row->total;
+$paid     = $row->paid;
+$due      = $row->due;
+$payment_type  = $row->payment_type;
+
+if (isset($_POST['btn_update_order'])){
   //check if the table is empty
   if (empty($_POST['pid_arr'])){
     $_SESSION['status']="Please Choose Product";
     $_SESSION['status_code'] = "error";
   }else{
+
     $subtotal = $_POST['txt_subtotal'];
     $discount = $_POST['txt_discount'];
     $sgst     = $_POST['txt_sgst'];
@@ -57,51 +70,114 @@ if (isset($_POST['btn_save_order'])){
     $arr_price   = $_POST['price_c_arr'];
     $arr_total    = $_POST['total_c_arr'];
 
-    $insert = $pdo->prepare("insert into tbl_invoice( order_date, subtotal, discount, sgst, cgst, total, payment_type, due, paid) values( :order_date, :subtotal, :discount, :sgst, :cgst, :total, :payment_type ,:due, :paid)");
-    $insert->bindParam(':order_date', $order_date);
-    $insert->bindParam(':subtotal', $subtotal);
-    $insert->bindParam(':discount', $discount);
-    $insert->bindParam(':sgst', $sgst);
-    $insert->bindParam(':cgst', $cgst);
-    $insert->bindParam(':total', $total);
-    $insert->bindParam(':payment_type', $payment_type);
-    $insert->bindParam(':due', $due);
-    $insert->bindParam(':paid', $paid);
+    $update_tbl_invoice = $pdo ->prepare("update tbl_invoice set order_date = :order_date, subtotal = :subtotal, discount = :discount, sgst = :sgst, cgst = :cgst, total = :total, payment_type = :payment_type, due = :due, paid = :paid where invoice_id = :invoice_id");
+    $update_tbl_invoice ->bindParam(':order_date', $order_date);
+    $update_tbl_invoice ->bindParam(':subtotal', $subtotal);
+    $update_tbl_invoice ->bindParam(':discount', $discount);
+    $update_tbl_invoice ->bindParam(':sgst', $sgst);
+    $update_tbl_invoice ->bindParam(':cgst', $cgst);
+    $update_tbl_invoice ->bindParam(':total', $total);
+    $update_tbl_invoice ->bindParam(':payment_type', $payment_type);
+    $update_tbl_invoice ->bindParam(':due', $due);
+    $update_tbl_invoice ->bindParam(':paid', $paid);
+    $update_tbl_invoice ->bindParam(':invoice_id', $id);
 
-    $insert->execute();
+    $update_tbl_invoice ->execute();
 
     $invoice_id = $pdo->lastInsertId();
-    if($insert != NULL){
-      for($i=0; $i<count($arr_pid); $i++){
-        $rem_qty = $arr_stock[$i] - $arr_qty[$i];
-        if($rem_qty < 0){
-          return "Order is not complete!";
-        }else{
 
-          $update = $pdo->prepare("update tbl_product set stock =:stock where product_id =:product_id");
-          $update->bindParam(':product_id', $arr_pid[$i]);
-          $update->bindParam(':stock', $rem_qty);
+    if($update_tbl_invoice != NULL){
+      // Get all original products and quantities from this order
+      $select_original = $pdo->prepare("SELECT product_id, qty FROM tbl_invoice_details WHERE invoice_id = :invoice_id");
+      $select_original->bindParam(":invoice_id", $id);
+      $select_original->execute();
+      $original_products = $select_original->fetchAll(PDO::FETCH_ASSOC);
+
+      // Create array of original quantities for reference
+      $original_quantities = [];
+      foreach($original_products as $op) {
+        $original_quantities[$op['product_id']] = $op['qty'];
+      }
+
+      // Create array of products in the updated order
+      $updated_products = [];
+      for($i=0; $i<count($arr_pid); $i++) {
+        $updated_products[$arr_pid[$i]] = $arr_qty[$i];
+      }
+
+      // First handle products that were removed (exist in original but not in update)
+      foreach($original_quantities as $pid => $original_qty) {
+        if(!isset($updated_products[$pid])) {
+          // This product was deleted - return its quantity to stock
+          $selectpdt = $pdo->prepare("SELECT stock FROM tbl_product WHERE product_id = :pid");
+          $selectpdt->bindParam(":pid", $pid);
+          $selectpdt->execute();
+          $rowpdt = $selectpdt->fetch(PDO::FETCH_OBJ);
+          $db_stock = $rowpdt->stock;
+
+          $new_stock = $db_stock + $original_qty;
+
+          $update = $pdo->prepare("UPDATE tbl_product SET stock = :stock WHERE product_id = :product_id");
+          $update->bindParam(':product_id', $pid);
+          $update->bindParam(':stock', $new_stock);
           $update->execute();
-
         }
+      }
+
+      // Now delete all existing invoice details for this order
+      $delete_details = $pdo->prepare("DELETE FROM tbl_invoice_details WHERE invoice_id = :invoice_id");
+      $delete_details->bindParam(':invoice_id', $id);
+      $delete_details->execute();
+
+      // Process the updated products
+      for($i=0; $i<count($arr_pid); $i++){
+        $pid = $arr_pid[$i];
+        $selectpdt = $pdo->prepare("SELECT * from tbl_product where product_id = :pid");
+        $selectpdt->bindParam(":pid", $pid);
+        $selectpdt->execute();
+
+        $rowpdt = $selectpdt->fetch(PDO::FETCH_OBJ);
+        $db_stock = $rowpdt->stock;
+
+        // Get the original quantity (0 if this is a new product added during edit)
+        $original_qty = isset($original_quantities[$pid]) ? $original_quantities[$pid] : 0;
+
+        // Calculate the new stock
+        // First return the original quantity to stock, then subtract the new quantity
+        $new_stock = $db_stock + $original_qty - $arr_qty[$i];
+
+        if($new_stock < 0){
+          $_SESSION['status'] = "Not enough stock for product: " . $arr_name[$i];
+          $_SESSION['status_code'] = "error";
+          header("location: editorder.php?id=".$id);
+          exit();
+        }
+
+        // Update product stock
+        $update = $pdo->prepare("UPDATE tbl_product SET stock = :stock WHERE product_id = :product_id");
+        $update->bindParam(':product_id', $pid);
+        $update->bindParam(':stock', $new_stock);
+        $update->execute();
+
         $product_net_price = $arr_price[$i] * $arr_qty[$i];
-        $insert = $pdo->prepare("insert into tbl_invoice_details(invoice_id, barcode, product_id, product_name, qty, rate, saleprice, order_date) values (:invoice_id, :barcode, :product_id, :product_name, :qty, :rate, :saleprice, :order_date)");
-        $insert->bindParam(':invoice_id', $invoice_id);
+
+        // Insert new invoice details
+        $insert = $pdo->prepare("INSERT INTO tbl_invoice_details(invoice_id, barcode, product_id, product_name, qty, rate, saleprice, order_date) VALUES (:invoice_id, :barcode, :product_id, :product_name, :qty, :rate, :saleprice, :order_date)");
+        $insert->bindParam(':invoice_id', $id);
         $insert->bindParam(':barcode', $arr_barcode[$i]);
-        $insert->bindParam(':product_id', $arr_pid[$i]);
+        $insert->bindParam(':product_id', $pid);
         $insert->bindParam(':product_name', $arr_name[$i]);
         $insert->bindParam(':qty', $arr_qty[$i]);
         $insert->bindParam(':rate', $arr_price[$i]);
         $insert->bindParam(':saleprice', $product_net_price);
         $insert->bindParam(':order_date', $order_date);
-
-        if(!$insert->execute()){
-          print_r($insert->errorInfo());
-        }else{
-          $_SESSION['status']="Order Added Successfully!";
-          $_SESSION['status_code'] = "success";
-        }
+        $insert->execute();
       }
+
+      $_SESSION['status'] = "Order Updated Successfully!";
+      $_SESSION['status_code'] = "success";
+      echo '<script>window.location.href="editorder.php?id='.$id.'";</script>';
+      exit();
     }
 
   }
@@ -171,30 +247,27 @@ if (isset($_POST['btn_save_order'])){
                     <input type="text" class="form-control" id="txt_barcode_id" placeholder="Scan Barcode" autofocus>
                   </div>
                   <form action="" method="POST" name="">
-                  <select class="form-control select2" data-dropdown-css-class="select2-purple" style="width: 100%; margin-bottom: 10px" id="select2_select">
-                    <option selected disabled >Select Or Search</option>
-                    <?php echo fill_product($pdo); ?>
-                  </select>
-                  <br>
-                  <div class="tableFixHead">
-                    <table id="product_table" class="table table-bordered table-hover">
-                      <thead>
-                      <tr>
-                        <th>Product</th>
-                        <th>Stock</th>
-                        <th>Price</th>
-                        <th>Quantity</th>
-                        <th>Total</th>
-                        <th>Del</th>
-                      </tr>
-                      </thead>
-                      <tbody class="details" id="item_table"  >
-<!--                        <tr data-widget="expandable-table" aria-expanded="false">-->
-<!---->
-<!--                        </tr>-->
-                      </tbody>
-                    </table>
-                  </div>
+                    <select class="form-control select2" data-dropdown-css-class="select2-purple" style="width: 100%; margin-bottom: 10px" id="select2_select">
+                      <option selected disabled >Select Or Search</option>
+                      <?php echo fill_product($pdo); ?>
+                    </select>
+                    <br>
+                    <div class="tableFixHead">
+                      <table id="product_table" class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Stock</th>
+                          <th>Price</th>
+                          <th>Quantity</th>
+                          <th>Total</th>
+                          <th>Del</th>
+                        </tr>
+                        </thead>
+                        <tbody class="details" id="item_table"  >
+                        </tbody>
+                      </table>
+                    </div>
 
                 </div>
                 <div class="col-md-4">
@@ -211,7 +284,7 @@ if (isset($_POST['btn_save_order'])){
                     <div class="input-group-prepend">
                       <span class="input-group-text"  >DISCOUNT</span>
                     </div>
-                    <input type="text" class="form-control" value="<?php echo $row->discount; ?>" id="txtdiscount_p" name="txt_discount" required>
+                    <input type="text" class="form-control" id="txtdiscount_p" name="txt_discount" value="<?php echo $discount; ?>" required>
                     <div class="input-group-append">
                       <span class="input-group-text">%</span>
                     </div>
@@ -229,7 +302,7 @@ if (isset($_POST['btn_save_order'])){
                     <div class="input-group-prepend">
                       <span class="input-group-text" >SGST(%)</span>
                     </div>
-                    <input type="text" class="form-control" value="<?php echo $row->sgst; ?>"  id="txtsgst_id_p" name="txt_sgst" readonly>
+                    <input type="text" class="form-control"  id="txtsgst_id_p" name="txt_sgst" value="<?php echo $sgst; ?>"  readonly>
                     <div class="input-group-append">
                       <span class="input-group-text">%</span>
                     </div>
@@ -238,7 +311,7 @@ if (isset($_POST['btn_save_order'])){
                     <div class="input-group-prepend">
                       <span class="input-group-text" >CGST(%)</span>
                     </div>
-                    <input type="text" class="form-control" value="<?php echo $row->cgst; ?>" id="txtcgst_id_p" name="txt_cgst" readonly>
+                    <input type="text" class="form-control" id="txtcgst_id_p" name="txt_cgst"  value="<?php echo $cgst; ?>" readonly>
                     <div class="input-group-append">
                       <span class="input-group-text">%</span>
                     </div>
@@ -277,13 +350,13 @@ if (isset($_POST['btn_save_order'])){
                   <hr style="height: 2px; border-width: 0; color: black; background-color: black;">
 
                   <div class="icheck-success d-inline">
-                    <input type="radio" name="r3" checked id="radioSuccess1" value="CASH">
+                    <input type="radio" name="r3" checked id="radioSuccess1" value="CASH" <?php echo ($payment_type == 'CASH') ? 'checked' : ''; ?>>
                     <label for="radioSuccess1">
                       CASH
                     </label>
                   </div>
                   <div class="icheck-primary d-inline">
-                    <input type="radio" name="r3" id="radioSuccess2" value="KHQR">
+                    <input type="radio" name="r3" id="radioSuccess2" value="KHQR" <?php echo ($payment_type == 'KHQR') ? 'checked' : ''; ?> >
                     <label for="radioSuccess2">
                       KHQR
                     </label>
@@ -303,14 +376,14 @@ if (isset($_POST['btn_save_order'])){
                     <div class="input-group-prepend">
                       <span class="input-group-text" >PAID</span>
                     </div>
-                    <input type="text" class="form-control form-control-lg " id="txtpaid" name="txt_paid" required >
+                    <input type="text" class="form-control form-control-lg " id="txtpaid" name="txt_paid" required>
                     <div class="input-group-append">
                       <span class="input-group-text">$</span>
                     </div>
                   </div>
                   <hr style="height: 2px; border-width: 0; color: black; background-color: black;">
                   <div class="text-center">
-                    <input type="submit" class="btn btn-primary" value="Save Order" name="btn_save_order">
+                    <input type="submit" class="btn btn-info" value="Update Order" name="btn_update_order">
                   </div>
 
                 </div>
@@ -335,15 +408,16 @@ include('footer.php');
 <script>
 
   $(function(){
-      //Initialize Select2 Elements
-      $('#select2_select').select2({
-        theme: 'bootstrap4'
-      })
+    //Initialize Select2 Elements
+    $('#select2_select').select2({
+      theme: 'bootstrap4'
+    });
 
-      $("#txtpaid").val("0.00");
+    //$("#txtpaid").val("0.00");
+
   });
 
-//start calculate function
+
   function calculate(dis=0, paid_amount=0){
     var subtotal = 0;
     var discount = dis;
@@ -386,10 +460,10 @@ include('footer.php');
   } //end calculate function
 
   //start addrow function
-  function addrow(pid, product, saleprice, stock, barcode) {
+  function addrow(pid, product, saleprice, stock, barcode, quantity=1) {
     var tr = '<tr>' +
       '<input type="hidden" class="form-control total_c" name="barcode_arr[]" value="' + barcode + '" >'+
-      '<input type="hidden" class="form-control total_c" name="product_arr[]" value="' + product + '" >'+
+      '<input type="hidden" class="form-control total_c" name="product_arr[]" value="' + product + '" >'+ //since i forgot to add prodcut_arr[], ill use this as a quick fix. Will come back later.
       '<td style="text-align: left; vertical-align: middle; font-size: 17px;">' +
       '<span class="badge badge-dark">' + product + '</span>' +
       '<input type="hidden" class="form-control pid" name="pid_arr[]" value="' + pid + '">' +
@@ -403,11 +477,11 @@ include('footer.php');
       '<input type="hidden" class="form-control price_c" name="price_c_arr[]" value="' + saleprice + '">' +
       '</td>' +
       '<td>' +
-      '<input type="text" class="form-control qty" name="quantity_arr[]" id="qty_id' + pid + '" value="1" size="1">' +
+      '<input type="text" class="form-control qty" name="quantity_arr[]" id="qty_id' + pid + '" value="'+ quantity +'" size="1">' +
       '</td>' +
       '<td style="text-align: left; vertical-align: middle; font-size: 17px;">' +
-      '<span class="badge badge-success totalamt" name="netamt_arr[]" id="saleprice_id' + pid + '">' + saleprice + '</span>' +
-      '<input type="hidden" class="form-control total_c" name="total_c_arr[]" value="' + saleprice + '">' +
+      '<span class="badge badge-success totalamt" name="netamt_arr[]" id="saleprice_id' + pid + '">' + saleprice * quantity + '</span>' +
+      '<input type="hidden" class="form-control total_c" name="total_c_arr[]" value="' + saleprice   + '">' +
       '</td>' +
       '<td>' +
       '<button class="btn btn-danger btn-sm delete-btn " data-id="' + pid + '"><span class="fa fa-trash" ></span></button>' +
@@ -415,6 +489,7 @@ include('footer.php');
       '</tr>';
 
     $('.details').append(tr);
+
   }
   //end addrow function
 
@@ -443,12 +518,41 @@ include('footer.php');
     productarr = jQuery.grep(productarr, function (value){
       return value !== removed;
     });
-
     $(this).closest('tr').remove();
-      calculate();
+    var discount = $("#txtdiscount_p").val();
+    var paid = $("#txtpaid").val();
+    calculate(discount, paid);
   });
 
   var productarr = [];
+
+  $.ajax({
+    url : 'getorderproduct.php',
+    method: "GET",
+    datatype: "json",
+    data: {
+      id:<?php echo $_GET['id']; ?>, //load the product from tbl_invoice_details with the invoice_id
+    },
+    success: function (data){
+
+      //load the product from invoice details to the table
+      $.each(data, function (key, val){
+
+        var real_stock = val['stock'] + val['qty']; //add the qty because we saved minus the qty from the stock when we create the order, if not, we would have the subtracted stock value which is incorrect
+
+        addrow(val['product_id'], val['product'], val['sale_price'], real_stock, val['barcode'], val['qty']);
+        productarr.push(val['product_id']);
+        var qty = val['qty'];
+        $("#qty_id"+val["product_id"]).val(qty);
+
+      });
+
+      calculate();
+      $("#txtpaid").val(<?php echo $paid; ?>)
+    }
+
+
+  });
 
   //for barcode search bar
   $(function (){
@@ -481,8 +585,8 @@ include('footer.php');
             $('#saleprice_id' + data['product_id']).html(saleprice);
             $('#saleprice_idd' + data['product_id']).html(saleprice);
 
+
             $('#txt_barcode_id').val("");
-            calculate();
           }else{
 
             addrow(data['product_id'], data['product'], data['sale_price'], data['stock'], data['barcode']);
@@ -492,11 +596,12 @@ include('footer.php');
             $("#txt_barcode_id").val("");
 
           }
-
+          calculate();
         }
       });
     });
 
+    //check if the amount is suitable
     $("#item_table").delegate(".qty", "keyup change", function(){
 
       var quantity = $(this);
@@ -542,7 +647,6 @@ include('footer.php');
             $('#saleprice_id' + data['product_id']).html(saleprice);
             $('#saleprice_idd' + data['product_id']).html(saleprice);
 
-
             $('#txt_barcode_id').val("");
           }else{
 
@@ -559,6 +663,7 @@ include('footer.php');
       });
     });
 
+    //check if the amount is suitable
     $("#item_table").delegate(".qty", "keyup change", function(){
 
       var quantity = $(this);
@@ -576,7 +681,6 @@ include('footer.php');
       }
       calculate();
     });
-
 
   });
 

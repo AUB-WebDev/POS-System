@@ -203,16 +203,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
       <!-- Sidebar Menu -->
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-          <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
-          <li class="nav-item">
-            <a href="dashboard.php" class="nav-link">
-              <i class="nav-icon fas fa-tachometer-alt"></i>
-              <p>
-                Dashboard
-              </p>
-            </a>
-          </li>
+<!--          <li class="nav-item">-->
+<!--            <a href="dashboard.php" class="nav-link">-->
+<!--              <i class="nav-icon fas fa-tachometer-alt"></i>-->
+<!--              <p>-->
+<!--                Dashboard-->
+<!--              </p>-->
+<!--            </a>-->
+<!--          </li>-->
           <li class="nav-item">
             <a href="category.php" class="nav-link">
               <i class="nav-icon fas fa-table"></i>
@@ -253,14 +251,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
               </p>
             </a>
           </li>
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-chart-pie"></i>
-              <p>
-                Sales Report
-              </p>
-            </a>
-          </li>
+<!--          <li class="nav-item">-->
+<!--            <a href="#" class="nav-link">-->
+<!--              <i class="nav-icon fas fa-chart-pie"></i>-->
+<!--              <p>-->
+<!--                Sales Report-->
+<!--              </p>-->
+<!--            </a>-->
+<!--          </li>-->
           <li class="nav-item">
             <a href="taxdis.php" class="nav-link">
               <i class="nav-icon fas fa-calculator"></i>

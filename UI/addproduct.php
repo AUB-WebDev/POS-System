@@ -109,7 +109,7 @@ if(isset($_POST['btn_save'])){
                     <div class="form-group">
                       <label >Category</label>
                       <select name="selected_option" class="form-control" required>
-                        <option value="" disabled selected>Select Role</option>
+                        <option value="" disabled selected>Select Category</option>
                         <?php
                         $select =$pdo->prepare("SELECT * FROM tbl_category");
                         $select->execute();

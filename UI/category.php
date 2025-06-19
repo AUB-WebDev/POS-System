@@ -7,22 +7,6 @@ if ($_SESSION['email']=="" OR $_SESSION['role']=="user") {
 
 include('header.php');
 
-//error_reporting(0);
-//
-//$id = $_GET['id'];
-//if (isset($id)) {
-//  $delete = $pdo->prepare("DELETE FROM tbl_user WHERE user_id=:id");
-//  $delete->bindParam(':id', $id);
-//
-//  if ($delete->execute()) {
-//    $_SESSION['status'] = "User has been deleted successfully";
-//    $_SESSION['status_code'] = "success";
-//  }else{
-//    $_SESSION['status'] = "User is not deleted";
-//    $_SESSION['status_code'] = "danger";
-//  }
-//}
-
 if (isset($_POST['btn_save'])) {
   $category = $_POST['category'];
 
