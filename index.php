@@ -102,7 +102,7 @@
         <div class="row">
           <div class="col-8">
             <p class="mb-1">
-              <a href="pages/examples/forgot-password.html">I forgot my password</a>
+              <a href="forgot-password-v2.php">forgot password?</a>
             </p>
           </div>
           <!-- /.col -->
