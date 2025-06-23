@@ -358,7 +358,7 @@ if (isset($_POST['btn_update_order'])){
                   <div class="icheck-primary d-inline">
                     <input type="radio" name="r3" id="radioSuccess2" value="KHQR" <?php echo ($payment_type == 'KHQR') ? 'checked' : ''; ?> >
                     <label for="radioSuccess2">
-                        <a target="_blank" href="#">KHQR</a>
+                        <a target="_blank" href="#" id="khqr_link">KHQR</a>
                     </label>
                   </div>
 
