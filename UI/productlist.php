@@ -1,12 +1,15 @@
 <?php
 include_once ('connectdb.php');
 session_start();
-if ($_SESSION['email']=="" OR $_SESSION['role']=="user") {
+if ($_SESSION['email']=="") {
   header('location: ../index.php');
-
+}elseif ($_SESSION['role']=="admin") {
+    include('header.php');
+}else{
+    include('headeruser.php');
 }
 
-include('header.php');
+
 
 ?>
 
@@ -56,7 +59,8 @@ include('header.php');
                 $select->execute();
 
                 while($row=$select->fetch(PDO::FETCH_OBJ)){
-                  echo '
+                    if ($_SESSION['role']=="admin") {
+                        echo '
                          <tr xmlns="http://www.w3.org/1999/html">
                            <td>' .$row->barcode.'</td>
                            <td>'.$row->product.'</td>
@@ -84,6 +88,31 @@ include('header.php');
                            </td>
                          </tr>
                         ';
+                    }else{
+                        echo '
+                         <tr xmlns="http://www.w3.org/1999/html">
+                           <td>' .$row->barcode.'</td>
+                           <td>'.$row->product.'</td>
+                           <td>'.$row->category.'</td>
+                           <td>'.$row->description.'</td>
+                           <td>'.$row->stock.'</td>
+                           <td>'.$row->purchase_price.'</td>
+                           <td>'.$row->sale_price.'</td>
+                           <td><img src="../'.$row->image_path.'" class="img-rounded" width="60px" height="60px"> </td>
+                           <td>
+                            <div class="btn-group">
+                                <a href="printbarcode.php?id='.$row->product_id.'" class="btn btn-primary btn-xs" role="button">
+                                    <span class="fa fa-barcode" style="color: #FFFFFF" data-toggle="tooltip" title="Print Barcode" "></span>
+                                </a>
+                                <a href="viewproduct.php?id='.$row->product_id.'" class="btn btn-warning btn-xs" role="button">
+                                    <span class="fa fa-eye" style="color: #FFFFFF" data-toggle="tooltip" title="View Product" "></span>
+                                </a>
+                            </div>
+                           </td>
+                         </tr>
+                        ';
+                    }
+
                 }
                 ?>
 

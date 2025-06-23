@@ -104,6 +104,13 @@ if(isset($_POST['btn_change'])){
                       <input type="password" class="form-control" id="inputPassword3" name="txt_confirm_password" placeholder="Confirm New Password" required>
                     </div>
                   </div>
+                    <div class="form-group row">
+<!--                        <label for="inputPassword3" class="col-sm-2 col-form-label">Confirm New Password</label>-->
+<!--                        <div class="col-sm-10">-->
+<!--                            <input type="password" class="form-control" id="inputPassword3" name="txt_confirm_password" placeholder="Confirm New Password" required>-->
+<!--                        </div>-->
+                        <a href="../forgot-password-v2.php" style="margin-left: 5px">forgot password?</a>
+                    </div>
                 </div>
                 <!-- /.card-body -->
                 <div class="card-footer">

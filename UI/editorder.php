@@ -358,7 +358,7 @@ if (isset($_POST['btn_update_order'])){
                   <div class="icheck-primary d-inline">
                     <input type="radio" name="r3" id="radioSuccess2" value="KHQR" <?php echo ($payment_type == 'KHQR') ? 'checked' : ''; ?> >
                     <label for="radioSuccess2">
-                      KHQR
+                        <a target="_blank" href="#">KHQR</a>
                     </label>
                   </div>
 
@@ -416,6 +416,14 @@ include('footer.php');
     //$("#txtpaid").val("0.00");
 
   });
+  // Update KHQR link when total changes
+  function updateKhqrLink() {
+      var total = $("#txttotal").val();
+      if (total) {
+          //$("#khqr_link").attr("href", "your aba payway link" + total +"&dynamic=true");
+          $("#khqr_link").attr("href", "#"); //Change it to your aba payway link if you want to apply aba KHQR
+      }
+  }
 
 
   function calculate(dis=0, paid_amount=0){
@@ -457,6 +465,7 @@ include('footer.php');
     $("#txttotal").val(total.toFixed(2));
     $("#txtdue").val(due.toFixed(2));
 
+    updateKhqrLink();
   } //end calculate function
 
   //start addrow function

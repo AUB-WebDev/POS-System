@@ -4,12 +4,17 @@ ob_start();
 
 include_once ('connectdb.php');
 session_start();
-if ($_SESSION['email']=="" OR $_SESSION['role']=="user") {
-  header('location: ../index.php');
+
+if ($_SESSION['role']=="user") {
+    include('headeruser.php');
+}elseif ($_SESSION['role']=="admin") {
+    include('header.php');
+}else{
+    header('location: ../index.php');
 }
 
 
-include('header.php');
+
 
 ob_end_flush();;
 
@@ -285,9 +290,10 @@ if (isset($_POST['btn_save_order'])){
                   <div class="icheck-primary d-inline">
                     <input type="radio" name="r3" id="radioSuccess2" value="KHQR">
                     <label for="radioSuccess2">
-                      KHQR
+                        <a target="_blank" href="#" id="khqr_link">KHQR</a>
                     </label>
                   </div>
+
 
                   <hr style="height: 2px; border-width: 0; color: black; background-color: black;">
                   <div class="input-group">
@@ -334,7 +340,17 @@ include('footer.php');
 
 <script>
 
-  $(function(){
+    // Update KHQR link when total changes
+    function updateKhqrLink() {
+        var total = $("#txttotal").val();
+        if (total) {
+            //$("#khqr_link").attr("href", "your aba payway link" + total +"&dynamic=true");
+            $("#khqr_link").attr("href", "#"); //Change it to your aba payway link if you want to apply aba KHQR
+        }
+    }
+
+
+    $(function(){
       //Initialize Select2 Elements
       $('#select2_select').select2({
         theme: 'bootstrap4'
@@ -382,6 +398,8 @@ include('footer.php');
 
     $("#txttotal").val(total.toFixed(2));
     $("#txtdue").val(due.toFixed(2));
+
+    updateKhqrLink();
 
   } //end calculate function
 

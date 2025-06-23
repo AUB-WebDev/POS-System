@@ -24,7 +24,7 @@
         $_SESSION['username'] = $row['username'];
         $_SESSION['status'] =  "Login Successful as Admin";
         $_SESSION['status_code'] = 'success';
-        header('refresh:1; UI/dashboard.php');
+        header('refresh:1; UI/productlist.php');
       }
       elseif ($row['email'] == $email && $row['password'] == $password && $row['role'] == 'user') {
 
@@ -35,7 +35,7 @@
         $_SESSION['username'] = $row['username'];
         $_SESSION['status'] =  "Login Successful as User";
         $_SESSION['status_code'] = 'success';
-        header('refresh:1; UI/user.php');
+        header('refresh:1; UI/productlist.php');
       }
       else { //since mysql is not case sensitive, use this
         $_SESSION['status_code'] = 'error';

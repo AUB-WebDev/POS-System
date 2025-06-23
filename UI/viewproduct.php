@@ -3,12 +3,16 @@ include_once ('connectdb.php');
 include_once 'php_barcode/barcode128.php';
 
 session_start();
-if ($_SESSION['email']=="" OR $_SESSION['role']=="user") {
+if ($_SESSION['email']=="") {
   header('location: ../index.php');
+}elseif ($_SESSION['role']=="admin") {
+    include('header.php');
+}else{
+    include('headeruser.php');
 }
 
 
-include('header.php');
+
 
 ?>
 
